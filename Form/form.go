@@ -39,6 +39,21 @@ const (
 	Teacher UserType = 3
 )
 
+type Course struct {
+	CourseID  string
+	Name      string
+	TeacherID string
+	CourseCap CourseCap
+}
+
+type CourseCap int
+
+type Schedule struct {
+	ScheduleID string
+	CourseID   string
+	StudentID  string
+}
+
 type GetMemberListResponse struct {
 	Code ErrNo
 	Data struct {
