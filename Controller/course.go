@@ -24,10 +24,10 @@ func CreateCourse(c *gin.Context) {
 	}
 
 	// 获取最新的记录
-	var len int64
-	global.DB.Table("courses").Count(&len)
+	var size int64
+	global.DB.Table("courses").Count(&size)
 	var firstCourse Form.TCourse
-	global.DB.Table("courses").Offset(int(len - 1)).Limit(1).Find(&firstCourse)
+	global.DB.Table("courses").Offset(int(size - 1)).Limit(1).Find(&firstCourse)
 	oldId, _ := strconv.ParseInt(firstCourse.CourseID, 10, 64)
 	fmt.Println(oldId + 1)
 
