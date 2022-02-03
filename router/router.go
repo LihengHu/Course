@@ -18,7 +18,7 @@ func RegisterRouter(r *gin.Engine) {
 	// 登录
 
 	g.POST("/auth/login", api.Login)
-	g.POST("/auth/logout", api.Loginout)
+	g.POST("/auth/logout", api.Logout)
 	g.GET("/auth/whoami", api.Whoami)
 
 	// 排课
