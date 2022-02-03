@@ -38,3 +38,46 @@ const (
 	Student UserType = 2
 	Teacher UserType = 3
 )
+
+type GetMemberListResponse struct {
+	Code ErrNo
+	Data struct {
+		MemberList []TMember
+	}
+}
+type TMember struct {
+	UserID   string
+	Nickname string
+	Username string
+	UserType UserType
+}
+
+type GetMemberResponse struct {
+	Code ErrNo
+	Data TMember
+}
+
+type DeleteMemberResponse struct {
+	Code ErrNo
+}
+type LoginResponse struct {
+	Code ErrNo
+	Data struct {
+		UserID string
+	}
+}
+
+type LogoutResponse struct {
+	Code ErrNo
+}
+type WhoAmIResponse struct {
+	Code ErrNo
+	Data TMember
+}
+
+type CreateMemberResponse struct {
+	Code ErrNo
+	Data struct {
+		UserID string // int64 范围
+	}
+}

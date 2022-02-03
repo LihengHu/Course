@@ -25,56 +25,54 @@ func Login(c *gin.Context) {
 	db.Where("Username = ?", Username).First(&user)
 	if user.Deleted == "1" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"ErrNo": Form.WrongPassword,
-			"msg":   "密码错误",
+			"Code": Form.WrongPassword,
 		})
 	}
 	if user.Username == "" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"ErrNo": Form.WrongPassword,
-			"msg":   "密码错误",
+			"Code": Form.WrongPassword,
 		})
 		return
 	}
 	if user.Password != Password {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"ErrNo": Form.WrongPassword,
-			"msg":   "密码错误",
+			"Code": Form.WrongPassword,
 		})
 		return
 	}
-	cookie, err := c.Cookie("camp-session")
+	cookie, err := c.Cookie("camp-seesion")
 	if err != nil {
 		cookie = "NotSet"
-		c.SetCookie("camp-session", user.Username, 3600, "/api/v1/", "localhost", false, true)
+		c.SetCookie("camp-seesion", user.Username, 3600, "/api/v1/", "localhost", false, true)
 	}
 	fmt.Printf("Cookie value: %s \n", cookie)
-	c.JSON(200, gin.H{
-		"status":   "posted",
-		"Password": user.Password,
-		"Username": user.Username,
-	})
+	c.JSON(200, Form.LoginResponse{
+		Code: 0,
+		Data: struct{ UserID string }{UserID: user.UserID},
+	},
+	)
 
 }
 
 func Loginout(c *gin.Context) {
-	cookie, err := c.Cookie("camp-session")
+	cookie, err := c.Cookie("camp-seesion")
 	if err != nil {
 		cookie = "NotSet"
 		return
 	}
 	// 设置cookie  MaxAge设置为-1，表示删除cookie
-	c.SetCookie("camp-session", cookie, -1, "/api/v1/", "localhost", false, true)
-	c.String(200, "登出成功")
+	c.SetCookie("camp-seesion", cookie, -1, "/api/v1/", "localhost", false, true)
+	c.JSON(200, Form.LogoutResponse{
+		Code: 0,
+	})
 }
 
 func Whoami(c *gin.Context) {
-	cookie, err := c.Cookie("camp-session")
+	cookie, err := c.Cookie("camp-seesion")
 	if err != nil {
 		cookie = "NotSet"
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"ErrNo": Form.LoginRequired,
-			"msg":   "用户未登陆",
+		c.JSON(200, gin.H{
+			"Code": Form.LoginRequired,
 		})
 		return
 	}
@@ -88,9 +86,14 @@ func Whoami(c *gin.Context) {
 	var user Form.Member
 	db.Where("Username = ?", cookie).First(&user)
 
-	c.JSON(200, gin.H{
-		"用户ID": user.UserID,
-		"用户昵称": user.Nickname,
-		"用户类型": user.UserType,
-	})
+	c.JSON(200, Form.WhoAmIResponse{
+		Code: 0,
+		Data: struct {
+			UserID   string
+			Nickname string
+			Username string
+			UserType Form.UserType
+		}{UserID: user.UserID, Nickname: user.Nickname, Username: user.Username, UserType: user.UserType},
+	},
+	)
 }
