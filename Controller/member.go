@@ -1,15 +1,16 @@
 package Controller
 
 import (
-	"gin_demo/Form"
+	"Course/Form"
+	"Course/global"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
 
 func Create(c *gin.Context) {
-	cookie, err := c.Cookie("camp-seesion")
+	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
 		c.JSON(200, gin.H{
@@ -17,21 +18,16 @@ func Create(c *gin.Context) {
 		})
 		return
 	}
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
 	var user Form.Member
-	db.Where("Username = ?", cookie).First(&user)
+	global.DB.Where("Username = ?", cookie).First(&user)
 	if user.UserType != 1 {
 		c.JSON(200, gin.H{
 			"Code": Form.LoginRequired,
 		})
 		return
 	}
+	//TODO: 生成自增ID
+	UserID := "3"
 	Nickname := c.PostForm("Nickname")
 	Username := c.PostForm("Username")
 	Password := c.PostForm("Password")
@@ -79,29 +75,27 @@ func Create(c *gin.Context) {
 		return
 	}
 	var user1 Form.Member
-	db.Where("username = ?", Username).First(&user1)
+	global.DB.Where("username = ?", Username).First(&user1)
 	if user1.UserID != "" {
 		c.JSON(200, gin.H{
 			"Code": Form.UserHasExisted,
 		})
 		return
 	}
-	u1 := Form.Member{"3", Nickname, Username, Password, Form.UserType(usertype), "0"}
-	db.Create(&u1)
+	u1 := Form.Member{UserID, Nickname, Username, Password, Form.UserType(usertype), "0"}
+	global.DB.Create(&u1)
+	global.LOG.Info(
+		"Create Member",
+		zap.String("UserID", UserID),
+		zap.String("Username", Username),
+	)
 	c.JSON(200, Form.CreateMemberResponse{Code: 0, Data: struct{ UserID string }{UserID: u1.UserID}})
 }
 
 func GetMember(c *gin.Context) {
 	UserID := c.PostForm("UserID")
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
 	var user Form.Member
-	db.Where("user_id = ?", UserID).First(&user)
+	global.DB.Where("user_id = ?", UserID).First(&user)
 	if user.Deleted == "" {
 		c.JSON(http.StatusOK, gin.H{"Code": Form.UserNotExisted})
 		return
@@ -122,30 +116,20 @@ func GetMember(c *gin.Context) {
 }
 func Delete(c *gin.Context) {
 	UserID := c.PostForm("UserID")
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
 	var user Form.Member
-	db.Model(&user).Where("user_id = ?", UserID).Update("deleted", "1")
+	global.DB.Model(&user).Where("user_id = ?", UserID).Update("deleted", "1")
+	global.LOG.Info(
+		"Delete Member",
+		zap.String("UserID", UserID),
+	)
 	c.JSON(200, gin.H{"Code": 0})
 }
 
 func Update(c *gin.Context) {
 	UserID := c.PostForm("UserID")
 	Nickname := c.PostForm("Nickname")
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
 	var user Form.Member
-	db.Where("user_id = ?", UserID).First(&user)
+	global.DB.Where("user_id = ?", UserID).First(&user)
 	if user.UserID == "" {
 		c.JSON(200, gin.H{
 			"Code": Form.UserNotExisted,
@@ -158,21 +142,18 @@ func Update(c *gin.Context) {
 		})
 		return
 	}
-	db.Model(&user).Where("user_id = ?", UserID).Update("nickname", Nickname)
+	global.DB.Model(&user).Where("user_id = ?", UserID).Update("nickname", Nickname)
+	global.LOG.Info(
+		"Update Member",
+		zap.String("UserID", UserID),
+		zap.String("new Nickname", Nickname),
+	)
 	c.JSON(200, gin.H{"Code": 0})
 }
 
 func List(c *gin.Context) {
-
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
-	userdb := db.Model(&Form.Member{}).Where(&Form.Member{Deleted: "0"})
-	var count int32
+	userdb := global.DB.Model(&Form.Member{}).Where(&Form.Member{Deleted: "0"})
+	var count int64
 	userdb.Count(&count) //总行数
 	pageindex, _ := strconv.Atoi(c.PostForm("Offset"))
 	pagesize, _ := strconv.Atoi(c.PostForm("Limit"))

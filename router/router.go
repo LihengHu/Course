@@ -1,7 +1,7 @@
 package router
 
 import (
-	api "gin_demo/Controller"
+	api "Course/Controller"
 	"github.com/gin-gonic/gin"
 )
 

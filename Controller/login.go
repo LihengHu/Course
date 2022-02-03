@@ -1,11 +1,10 @@
 package Controller
 
 import (
-	"fmt"
-	"gin_demo/Form"
+	"Course/Form"
+	"Course/global"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -13,16 +12,9 @@ import (
 func Login(c *gin.Context) {
 	Username := c.PostForm("Username")
 	Password := c.PostForm("Password")
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
 
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
 	var user Form.Member
-	db.Where("Username = ?", Username).First(&user)
+	global.DB.Where("Username = ?", Username).First(&user)
 	if user.Deleted == "1" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"Code": Form.WrongPassword,
@@ -45,13 +37,15 @@ func Login(c *gin.Context) {
 		cookie = "NotSet"
 		c.SetCookie("camp-seesion", user.Username, 3600, "/api/v1/", "localhost", false, true)
 	}
-	fmt.Printf("Cookie value: %s \n", cookie)
+	global.LOG.Info(
+		"Set Cookie",
+		zap.String("Cookie", cookie),
+	)
 	c.JSON(200, Form.LoginResponse{
 		Code: 0,
 		Data: struct{ UserID string }{UserID: user.UserID},
 	},
 	)
-
 }
 
 func Loginout(c *gin.Context) {
@@ -62,6 +56,10 @@ func Loginout(c *gin.Context) {
 	}
 	// 设置cookie  MaxAge设置为-1，表示删除cookie
 	c.SetCookie("camp-seesion", cookie, -1, "/api/v1/", "localhost", false, true)
+	global.LOG.Info(
+		"Remove Cookie",
+		zap.String("Cookie", cookie),
+	)
 	c.JSON(200, Form.LogoutResponse{
 		Code: 0,
 	})
@@ -76,15 +74,9 @@ func Whoami(c *gin.Context) {
 		})
 		return
 	}
-	db, err := gorm.Open("mysql", "root:root@(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	// 自动迁移
-	db.AutoMigrate(&Form.Member{})
+
 	var user Form.Member
-	db.Where("Username = ?", cookie).First(&user)
+	global.DB.Where("Username = ?", cookie).First(&user)
 
 	c.JSON(200, Form.WhoAmIResponse{
 		Code: 0,
