@@ -5,6 +5,7 @@ import (
 	"Course/global"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
@@ -39,6 +40,11 @@ func CreateCourse(c *gin.Context) {
 	}
 
 	global.DB.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").Table("courses").Create(&newCourse)
+	global.LOG.Info(
+		"Create Course",
+		zap.Any("Course", newCourse),
+	)
+
 	c.JSON(http.StatusOK, Form.CreateCourseResponse{
 		Code: Form.OK,
 		Data: struct {
@@ -107,6 +113,10 @@ func BindCourse(c *gin.Context) {
 
 	// 绑定
 	global.DB.Table("courses").Where("course_id=?", bindCourseRequest.CourseID).Update("teacher_id", bindCourseRequest.TeacherID)
+	global.LOG.Info(
+		"Bind Course",
+		zap.Any("Course", bindCourseRequest),
+	)
 	c.JSON(http.StatusOK, Form.BindCourseResponse{Code: Form.OK})
 
 }
@@ -139,6 +149,10 @@ func UnbindCourse(c *gin.Context) {
 
 	//解绑
 	global.DB.Table("courses").Where("course_id=?", unbindCourseRequest.CourseID).Update("teacher_id", "-1")
+	global.LOG.Info(
+		"Unbind Course",
+		zap.Any("Course", unbindCourseRequest),
+	)
 	c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.OK})
 }
 
