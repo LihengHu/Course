@@ -9,7 +9,7 @@ import (
 )
 
 func Create(c *gin.Context) {
-	cookie, err := c.Cookie("camp-seesion")
+	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
@@ -164,5 +164,5 @@ func Update(c *gin.Context) {
 }
 
 func List(c *gin.Context) {
-	
+
 }

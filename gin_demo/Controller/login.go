@@ -43,10 +43,10 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	cookie, err := c.Cookie("camp-seesion")
+	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
-		c.SetCookie("camp-seesion", user.Username, 3600, "/api/v1/", "localhost", false, true)
+		c.SetCookie("camp-session", user.Username, 3600, "/api/v1/", "localhost", false, true)
 	}
 	fmt.Printf("Cookie value: %s \n", cookie)
 	c.JSON(200, gin.H{
@@ -58,18 +58,18 @@ func Login(c *gin.Context) {
 }
 
 func Loginout(c *gin.Context) {
-	cookie, err := c.Cookie("camp-seesion")
+	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
 		return
 	}
 	// 设置cookie  MaxAge设置为-1，表示删除cookie
-	c.SetCookie("camp-seesion", cookie, -1, "/api/v1/", "localhost", false, true)
+	c.SetCookie("camp-session", cookie, -1, "/api/v1/", "localhost", false, true)
 	c.String(200, "登出成功")
 }
 
 func Whoami(c *gin.Context) {
-	cookie, err := c.Cookie("camp-seesion")
+	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
