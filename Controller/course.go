@@ -36,7 +36,7 @@ func CreateCourse(c *gin.Context) {
 		CourseID:  strconv.FormatInt(oldId+1, 10),
 		Name:      createCourseRequest.Name,
 		TeacherID: "-1",
-		Cap:       createCourseRequest.Cap,
+		CourseCap: createCourseRequest.Cap,
 	}
 
 	global.DB.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").Table("courses").Create(&newCourse)

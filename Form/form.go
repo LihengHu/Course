@@ -103,7 +103,7 @@ type TCourse struct {
 	CourseID  string `gorm:"Column:course_id"`
 	TeacherID string `gorm:"Column:teacher_id"`
 	Name      string `gorm:"Column:name"`
-	Cap       int    `gorm:"Column:cap"`
+	CourseCap int    `gorm:"Column:course_cap"`
 }
 
 // 创建课程
