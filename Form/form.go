@@ -96,3 +96,62 @@ type CreateMemberResponse struct {
 		UserID string // int64 范围
 	}
 }
+
+/*课程相关的请求模型*/
+// 课程
+type TCourse struct {
+	CourseID  string `gorm:"Column:course_id"`
+	TeacherID string `gorm:"Column:teacher_id"`
+	Name      string `gorm:"Column:name"`
+	Cap       int    `gorm:"Column:cap"`
+}
+
+// 创建课程
+type CreateCourseRequest struct {
+	Name string
+	Cap  int
+}
+type CreateCourseResponse struct {
+	Code ErrNo
+	Data struct {
+		CourseID string
+	}
+}
+
+// 获取课程
+type GetCourseRequest struct {
+	CourseID string
+}
+type GetCourseResponse struct {
+	Code ErrNo
+	Data TCourse
+}
+
+//绑定课程
+type BindCourseRequest struct {
+	CourseID  string
+	TeacherID string
+}
+type BindCourseResponse struct {
+	Code ErrNo
+}
+
+//解绑课程
+type UnbindCourseRequest struct {
+	CourseID  string
+	TeacherID string
+}
+type UnbindCourseResponse struct {
+	Code ErrNo
+}
+
+// 该教师所有课程
+type GetTeacherCourseRequest struct {
+	TeacherID string
+}
+type GetTeacherCourseResponse struct {
+	Code ErrNo
+	Data struct {
+		CourseList []*TCourse
+	}
+}
