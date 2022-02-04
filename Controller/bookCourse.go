@@ -6,49 +6,90 @@ import (
 	"Course/types"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 func BookCourse(c *gin.Context) {
-	cookie, err := c.Cookie("camp-session")
+	//TODO: 考虑高并发情况
+	StudentID := c.PostForm("StudentID")
+	CourseID := c.PostForm("CourseID")
+
+	// 检验学生是否存在
+	count, err := global.RDB.SCard(global.CTX, "members").Result()
 	if err != nil {
-		c.JSON(200, gin.H{
-			"Code": Form.LoginRequired,
-		})
-		return
+		panic(err)
 	}
-	var user Form.Member
-	global.DB.Where("Username = ?", cookie).First(&user)
-	if user.UserType != 2 {
+	if count == 0 {
+		var redisMembers []string
+		global.DB.Table("members").Select("User_ID").Where("User_Type = ?", 2).Find(&redisMembers)
+		err := global.RDB.SAdd(global.CTX, "members", redisMembers).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	isStudent, err := global.RDB.SIsMember(global.CTX, "members", StudentID).Result()
+	if err != nil {
+		panic(err)
+	}
+	if !isStudent {
 		c.JSON(200, gin.H{
 			"Code": Form.StudentNotExisted,
 		})
 		return
 	}
-	//TODO: 考虑高并发情况
-	CourseID := c.PostForm("CourseID")
-	var course Form.Course
-	global.DB.Where("Course_ID = ?", CourseID).Find(&course)
-	if course.CourseID == "" {
+
+	// 检验课程是否存在
+	count, err = global.RDB.HLen(global.CTX, "courses").Result()
+	if err != nil {
+		panic(err)
+	}
+	if count == 0 {
+		var courses []*Form.RedisCourse
+		global.DB.Table("courses").Select("Course_ID,Course_Cap").Find(&courses)
+		redisCourses := make(map[string]interface{})
+		for _, course := range courses {
+			redisCourses[course.Course_ID] = course.Course_Cap
+		}
+		err := global.RDB.HMSet(global.CTX, "courses", redisCourses).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	isCourse, err := global.RDB.HExists(global.CTX, "courses", CourseID).Result()
+	if !isCourse {
 		c.JSON(200, gin.H{
 			"Code": Form.CourseNotExisted,
 		})
 		return
 	}
-	if course.CourseCap <= 0 {
+	if err != nil {
+		panic(err)
+	}
+	courseCapStr, err := global.RDB.HGet(global.CTX, "courses", CourseID).Result()
+	if err != nil {
+		panic(err)
+	}
+	courseCap, _ := strconv.Atoi(courseCapStr)
+	if courseCap <= 0 {
 		c.JSON(200, gin.H{
 			"Code": Form.CourseNotAvailable,
 		})
 		return
 	}
-	//TODO: 自增ID
-	ScheduleID := "1"
-	u1 := Form.Schedule{ScheduleID, CourseID, user.UserID}
+	var schedule Form.Schedule
+	global.DB.Where("Course_ID = ? and Student_ID = ?", CourseID, StudentID).First(&schedule)
+	if schedule.CourseID != "" {
+		c.JSON(200, gin.H{
+			"Code": Form.StudentHasCourse,
+		})
+		return
+	}
+	u1 := Form.Schedule{StudentID, CourseID}
 	global.DB.Create(&u1)
 	global.LOG.Info(
 		"Book Course",
-		zap.String("ScheduleID", ScheduleID),
 		zap.String("CourseID", CourseID),
-		zap.String("UserID", user.UserID),
+		zap.String("UserID", StudentID),
 	)
 	c.JSON(200, types.BookCourseResponse{Code: 0})
 }

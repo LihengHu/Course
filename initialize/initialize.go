@@ -4,6 +4,7 @@ import (
 	"Course/Form"
 	"Course/global"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -40,4 +41,13 @@ func RegisterTables(db *gorm.DB) {
 		os.Exit(0)
 	}
 	global.LOG.Info("register table success")
+}
+
+func Redis() (rdb *redis.Client) {
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	return rdb
 }

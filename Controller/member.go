@@ -82,6 +82,10 @@ func Create(c *gin.Context) {
 		})
 		return
 	}
+	err = global.RDB.Del(global.CTX, "members").Err()
+	if err != nil {
+		panic(err)
+	}
 	u1 := Form.Member{UserID, Nickname, Username, Password, Form.UserType(usertype), "0"}
 	global.DB.Create(&u1)
 	global.LOG.Info(
@@ -116,6 +120,10 @@ func GetMember(c *gin.Context) {
 }
 func Delete(c *gin.Context) {
 	UserID := c.PostForm("UserID")
+	err := global.RDB.Del(global.CTX, "members").Err()
+	if err != nil {
+		panic(err)
+	}
 	var user Form.Member
 	global.DB.Model(&user).Where("user_id = ?", UserID).Update("deleted", "1")
 	global.LOG.Info(
@@ -128,6 +136,10 @@ func Delete(c *gin.Context) {
 func Update(c *gin.Context) {
 	UserID := c.PostForm("UserID")
 	Nickname := c.PostForm("Nickname")
+	err := global.RDB.Del(global.CTX, "members").Err()
+	if err != nil {
+		panic(err)
+	}
 	var user Form.Member
 	global.DB.Where("user_id = ?", UserID).First(&user)
 	if user.UserID == "" {

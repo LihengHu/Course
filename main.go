@@ -4,6 +4,7 @@ import (
 	"Course/global"
 	"Course/initialize"
 	Types "Course/router"
+	"context"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +14,8 @@ func main() {
 	Types.RegisterRouter(router)
 	global.LOG = initialize.Zap()
 	global.DB = initialize.GormMysql()
+	global.RDB = initialize.Redis()
+	global.CTX = context.Background()
 	if global.LOG != nil {
 		defer global.LOG.Sync()
 	}

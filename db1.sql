@@ -56,10 +56,9 @@ insert  into `members`(`user_id`,`nickname`,`username`,`password`,`user_type`,`d
 DROP TABLE IF EXISTS `schedules`;
 
 CREATE TABLE `schedules` (
-  `schedule_id` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
-  `course_id` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `student_id` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`schedule_id`)
+  `course_id` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  PRIMARY KEY (`student_id`,`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `schedule` */

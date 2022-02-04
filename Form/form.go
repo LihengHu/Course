@@ -46,12 +46,16 @@ type Course struct {
 	CourseCap CourseCap
 }
 
+type RedisCourse struct {
+	Course_ID  string
+	Course_Cap int
+}
+
 type CourseCap int
 
 type Schedule struct {
-	ScheduleID string
-	CourseID   string
-	StudentID  string
+	StudentID string
+	CourseID  string
 }
 
 type GetMemberListResponse struct {

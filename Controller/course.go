@@ -39,6 +39,10 @@ func CreateCourse(c *gin.Context) {
 		CourseCap: createCourseRequest.Cap,
 	}
 
+	err := global.RDB.Del(global.CTX, "courses").Err()
+	if err != nil {
+		panic(err)
+	}
 	global.DB.Table("courses").Create(&newCourse)
 	global.LOG.Info(
 		"Create Course",
