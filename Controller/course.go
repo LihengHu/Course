@@ -39,7 +39,7 @@ func CreateCourse(c *gin.Context) {
 		CourseCap: createCourseRequest.Cap,
 	}
 
-	global.DB.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").Table("courses").Create(&newCourse)
+	global.DB.Table("courses").Create(&newCourse)
 	global.LOG.Info(
 		"Create Course",
 		zap.Any("Course", newCourse),
