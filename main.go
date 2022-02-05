@@ -12,10 +12,10 @@ func main() {
 	//TODO: 后期数据库要用Viper从yaml文件中读取，避免写死
 	router := gin.Default()
 	Types.RegisterRouter(router)
+	global.CTX = context.Background()
 	global.LOG = initialize.Zap()
 	global.DB = initialize.GormMysql()
 	global.RDB = initialize.Redis()
-	global.CTX = context.Background()
 	if global.LOG != nil {
 		defer global.LOG.Sync()
 	}

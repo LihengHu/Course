@@ -49,5 +49,9 @@ func Redis() (rdb *redis.Client) {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+	err := rdb.SAdd(global.CTX, "schedules", "nothing").Err()
+	if err != nil {
+		panic(err)
+	}
 	return rdb
 }

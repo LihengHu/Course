@@ -23,7 +23,7 @@ func BookCourse(c *gin.Context) {
 	//	panic(err)
 	//}
 
-	// 检验学生是否存在
+	// 刷新members缓存并检验学生是否存在
 	count, err := global.RDB.SCard(global.CTX, "members").Result()
 	if err != nil {
 		panic(err)
@@ -55,7 +55,7 @@ func BookCourse(c *gin.Context) {
 		return
 	}
 
-	// 检验课程是否存在
+	// 刷新courses缓存并检验课程是否存在
 	count, err = global.RDB.HLen(global.CTX, "courses").Result()
 	if err != nil {
 		panic(err)
@@ -124,6 +124,7 @@ func BookCourse(c *gin.Context) {
 		global.MutexSchedules.Unlock()
 	}
 
+	// lua脚本原子更新redis
 	scheduleID := CourseID + "_" + StudentID
 	const LuaScript = `
 		local scheduleKey = KEYS[1]
@@ -158,9 +159,27 @@ func BookCourse(c *gin.Context) {
 		})
 		return
 	}
-	global.DB.Table("courses").Where("Course_ID = ?", CourseID).Update("Course_Cap", gorm.Expr("Course_Cap - 1"))
+
+	// 抢课成功，开启事务写入数据库
+	tx := global.DB.Begin()
+	err = tx.Table("courses").Where("Course_ID = ?", CourseID).Update("Course_Cap", gorm.Expr("Course_Cap - 1")).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(200, gin.H{
+			"Code": Form.UnknownError,
+		})
+		return
+	}
 	u1 := Form.Schedule{StudentID, CourseID}
-	global.DB.Create(&u1)
+	err = tx.Create(&u1).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(200, gin.H{
+			"Code": Form.UnknownError,
+		})
+		return
+	}
+	tx.Commit()
 	global.LOG.Info(
 		"Book Course",
 		zap.String("CourseID", CourseID),
