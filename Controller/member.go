@@ -22,7 +22,7 @@ func Create(c *gin.Context) {
 	global.DB.Where("Username = ?", cookie).First(&user)
 	if user.UserType != 1 {
 		c.JSON(200, gin.H{
-			"Code": Form.LoginRequired,
+			"Code": Form.PermDenied,
 		})
 		return
 	}
