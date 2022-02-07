@@ -27,7 +27,12 @@ func Create(c *gin.Context) {
 		return
 	}
 	//TODO: 生成自增ID
-	UserID := "3"
+	var size int64
+	global.DB.Table("members").Count(&size)
+	var firstUser Form.Member
+	global.DB.Table("members").Offset(int(size - 1)).Limit(1).Find(&firstUser)
+	oldId, _ := strconv.ParseInt(firstUser.UserID, 10, 64)
+	UserID := strconv.FormatInt(oldId+1, 10)
 	Nickname := c.PostForm("Nickname")
 	Username := c.PostForm("Username")
 	Password := c.PostForm("Password")
