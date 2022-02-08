@@ -20,7 +20,7 @@ func Create(c *gin.Context) {
 	}
 	var user Form.Member
 	global.DB.Where("Username = ?", cookie).First(&user)
-	if user.UserType != 1 {
+	if user.UserType != Form.Admin {
 		c.JSON(200, gin.H{
 			"Code": Form.PermDenied,
 		})
@@ -33,11 +33,12 @@ func Create(c *gin.Context) {
 	global.DB.Table("members").Offset(int(size - 1)).Limit(1).Find(&firstUser)
 	oldId, _ := strconv.ParseInt(firstUser.UserID, 10, 64)
 	UserID := strconv.FormatInt(oldId+1, 10)
-	Nickname := c.PostForm("Nickname")
-	Username := c.PostForm("Username")
-	Password := c.PostForm("Password")
-	UserType := c.PostForm("UserType")
-	usertype, _ := strconv.Atoi(UserType)
+	var create Form.CreateMemberRequest
+	c.Bind(&create)
+	Nickname := create.Nickname
+	Username := create.Username
+	Password := create.Password
+	UserType := create.UserType
 	if len(Nickname) < 4 || len(Nickname) > 20 {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"Code": Form.ParamInvalid,
@@ -73,7 +74,7 @@ func Create(c *gin.Context) {
 			"Code": Form.ParamInvalid,
 		})
 	}
-	if usertype != 1 && usertype != 2 && usertype != 3 {
+	if UserType != Form.Admin && UserType != Form.Student && UserType != Form.Teacher {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"Code": Form.ParamInvalid,
 		})
@@ -91,7 +92,7 @@ func Create(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	u1 := Form.Member{UserID, Nickname, Username, Password, Form.UserType(usertype), "0"}
+	u1 := Form.Member{UserID, Nickname, Username, Password, UserType, "0"}
 	global.DB.Create(&u1)
 	global.LOG.Info(
 		"Create Member",
@@ -124,7 +125,9 @@ func GetMember(c *gin.Context) {
 	})
 }
 func Delete(c *gin.Context) {
-	UserID := c.PostForm("UserID")
+	var deleteRequest Form.DeleteMemberRequest
+	c.Bind(&deleteRequest)
+	UserID := deleteRequest.UserID
 	err := global.RDB.Del(global.CTX, "members").Err()
 	if err != nil {
 		panic(err)
@@ -139,8 +142,10 @@ func Delete(c *gin.Context) {
 }
 
 func Update(c *gin.Context) {
-	UserID := c.PostForm("UserID")
-	Nickname := c.PostForm("Nickname")
+	var updateRequest Form.UpdateMemberRequest
+	c.Bind(&updateRequest)
+	UserID := updateRequest.UserID
+	Nickname := updateRequest.Nickname
 	err := global.RDB.Del(global.CTX, "members").Err()
 	if err != nil {
 		panic(err)
@@ -172,8 +177,10 @@ func List(c *gin.Context) {
 	userdb := global.DB.Model(&Form.Member{}).Where(&Form.Member{Deleted: "0"})
 	var count int64
 	userdb.Count(&count) //总行数
-	pageindex, _ := strconv.Atoi(c.PostForm("Offset"))
-	pagesize, _ := strconv.Atoi(c.PostForm("Limit"))
+	var getMember Form.GetMemberListRequest
+	c.Bind(&getMember)
+	pageindex := getMember.Offset
+	pagesize := getMember.Limit
 	UserList := []Form.Member{}
 	userdb.Offset((pageindex - 1) * pagesize).Limit(pagesize).Find(&UserList) //查询pageindex页的数据
 	var length int = len(UserList)

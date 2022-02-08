@@ -58,12 +58,7 @@ type Schedule struct {
 	CourseID  string
 }
 
-type GetMemberListResponse struct {
-	Code ErrNo
-	Data struct {
-		MemberList []TMember
-	}
-}
+//成员管理
 type TMember struct {
 	UserID   string
 	Nickname string
@@ -71,13 +66,59 @@ type TMember struct {
 	UserType UserType
 }
 
+//获取成员信息
+type GetMemberRequest struct {
+	UserID string
+}
 type GetMemberResponse struct {
 	Code ErrNo
 	Data TMember
 }
 
+//删除
+type DeleteMemberRequest struct {
+	UserID string
+}
 type DeleteMemberResponse struct {
 	Code ErrNo
+}
+
+//批量获取成员
+type GetMemberListRequest struct {
+	Offset int
+	Limit  int
+}
+type GetMemberListResponse struct {
+	Code ErrNo
+	Data struct {
+		MemberList []TMember
+	}
+}
+
+//更新
+type UpdateMemberRequest struct {
+	UserID   string
+	Nickname string
+}
+
+//创建成员
+type CreateMemberRequest struct {
+	Nickname string   // required，不小于 4 位 不超过 20 位
+	Username string   // required，只支持大小写，长度不小于 8 位 不超过 20 位
+	Password string   // required，同时包括大小写、数字，长度不少于 8 位 不超过 20 位
+	UserType UserType // required, 枚举值
+}
+type CreateMemberResponse struct {
+	Code ErrNo
+	Data struct {
+		UserID string // int64 范围
+	}
+}
+
+//登录
+type LoginRequest struct {
+	Username string
+	Password string
 }
 type LoginResponse struct {
 	Code ErrNo
@@ -92,13 +133,6 @@ type LogoutResponse struct {
 type WhoAmIResponse struct {
 	Code ErrNo
 	Data TMember
-}
-
-type CreateMemberResponse struct {
-	Code ErrNo
-	Data struct {
-		UserID string // int64 范围
-	}
 }
 
 /*课程相关的请求模型*/

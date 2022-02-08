@@ -10,8 +10,10 @@ import (
 
 //登录
 func Login(c *gin.Context) {
-	Username := c.PostForm("Username")
-	Password := c.PostForm("Password")
+	var loginRequest Form.LoginRequest
+	c.Bind(&loginRequest)
+	Username := loginRequest.Username
+	Password := loginRequest.Password
 
 	var user Form.Member
 	global.DB.Where("Username = ?", Username).First(&user)
