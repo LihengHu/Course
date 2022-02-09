@@ -18,18 +18,18 @@ func Login(c *gin.Context) {
 	var user Form.Member
 	global.DB.Where("Username = ?", Username).First(&user)
 	if user.Deleted == "1" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.WrongPassword,
 		})
 	}
 	if user.Username == "" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.WrongPassword,
 		})
 		return
 	}
 	if user.Password != Password {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.WrongPassword,
 		})
 		return

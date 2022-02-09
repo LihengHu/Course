@@ -15,7 +15,7 @@ func CreateCourse(c *gin.Context) {
 	var createCourseRequest Form.CreateCourseRequest
 	// 参数有误
 	if err := c.Bind(&createCourseRequest); err != nil || len(createCourseRequest.Name) == 0 || createCourseRequest.Cap <= 0 {
-		c.JSON(http.StatusUnprocessableEntity, Form.CreateCourseResponse{
+		c.JSON(http.StatusOK, Form.CreateCourseResponse{
 			Code: Form.ParamInvalid,
 			Data: struct {
 				CourseID string
@@ -39,6 +39,7 @@ func CreateCourse(c *gin.Context) {
 		CourseCap: createCourseRequest.Cap,
 	}
 
+	/*redis*/
 	err := global.RDB.Del(global.CTX, "courses").Err()
 	if err != nil {
 		panic(err)
@@ -63,7 +64,7 @@ func GetCourse(c *gin.Context) {
 	var getCourseRequest Form.GetCourseRequest
 	// 参数有误
 	if err := c.Bind(&getCourseRequest); err != nil || len(getCourseRequest.CourseID) == 0 {
-		c.JSON(http.StatusUnprocessableEntity, Form.GetCourseResponse{
+		c.JSON(http.StatusOK, Form.GetCourseResponse{
 			Code: Form.ParamInvalid,
 			Data: Form.TCourse{},
 		})
@@ -76,7 +77,7 @@ func GetCourse(c *gin.Context) {
 
 	// 课程不存在
 	if getCourse.CourseID == "" {
-		c.JSON(http.StatusUnprocessableEntity, Form.GetCourseResponse{
+		c.JSON(http.StatusOK, Form.GetCourseResponse{
 			Code: Form.CourseNotExisted,
 			Data: Form.TCourse{},
 		})
@@ -95,7 +96,7 @@ func BindCourse(c *gin.Context) {
 	var bindCourseRequest Form.BindCourseRequest
 	// 参数不合法
 	if err := c.Bind(&bindCourseRequest); err != nil || len(bindCourseRequest.CourseID) == 0 || len(bindCourseRequest.TeacherID) == 0 {
-		c.JSON(http.StatusUnprocessableEntity, Form.BindCourseResponse{Code: Form.ParamInvalid})
+		c.JSON(http.StatusOK, Form.BindCourseResponse{Code: Form.ParamInvalid})
 		return
 	}
 
@@ -105,13 +106,13 @@ func BindCourse(c *gin.Context) {
 
 	// 课程不存在
 	if getCourse.CourseID == "" {
-		c.JSON(http.StatusUnprocessableEntity, Form.BindCourseResponse{Code: Form.CourseNotExisted})
+		c.JSON(http.StatusOK, Form.BindCourseResponse{Code: Form.CourseNotExisted})
 		return
 	}
 
 	// 课程已绑定
 	if getCourse.TeacherID != "-1" {
-		c.JSON(http.StatusUnprocessableEntity, Form.BindCourseResponse{Code: Form.CourseHasBound})
+		c.JSON(http.StatusOK, Form.BindCourseResponse{Code: Form.CourseHasBound})
 		return
 	}
 
@@ -131,7 +132,7 @@ func UnbindCourse(c *gin.Context) {
 	var unbindCourseRequest Form.UnbindCourseRequest
 	// 参数不合法
 	if err := c.Bind(&unbindCourseRequest); err != nil || len(unbindCourseRequest.CourseID) == 0 || len(unbindCourseRequest.TeacherID) == 0 {
-		c.JSON(http.StatusUnprocessableEntity, Form.UnbindCourseResponse{Code: Form.ParamInvalid})
+		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.ParamInvalid})
 		return
 	}
 
@@ -141,13 +142,19 @@ func UnbindCourse(c *gin.Context) {
 
 	// 课程不存在
 	if getCourse.CourseID == "" {
-		c.JSON(http.StatusUnprocessableEntity, Form.UnbindCourseResponse{Code: Form.CourseNotExisted})
+		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.CourseNotExisted})
 		return
 	}
 
 	// 课程未绑定
 	if getCourse.TeacherID == "-1" {
-		c.JSON(http.StatusUnprocessableEntity, Form.UnbindCourseResponse{Code: Form.CourseNotBind})
+		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.CourseNotBind})
+		return
+	}
+
+	// 课程已绑定的TeacherID与传入的TeacherID不一致
+	if getCourse.TeacherID != unbindCourseRequest.TeacherID {
+		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.ParamInvalid})
 		return
 	}
 
@@ -166,7 +173,7 @@ func GetTeacherCourse(c *gin.Context) {
 	var getTeacherCourseRequest Form.GetTeacherCourseRequest
 	// 参数不合法
 	if err := c.Bind(&getTeacherCourseRequest); err != nil || len(getTeacherCourseRequest.TeacherID) == 0 {
-		c.JSON(http.StatusUnprocessableEntity, Form.GetTeacherCourseResponse{
+		c.JSON(http.StatusOK, Form.GetTeacherCourseResponse{
 			Code: Form.ParamInvalid,
 			Data: struct {
 				CourseList []*Form.TCourse
@@ -194,4 +201,62 @@ func GetTeacherCourse(c *gin.Context) {
 			CourseList []*Form.TCourse
 		}{courses},
 	})
+}
+
+//排课求解器
+func Schedule(c *gin.Context) {
+	// 创建变量绑定输入
+	var scheduleCourseRequest Form.ScheduleCourseRequest
+	// 参数不合法
+	if err := c.Bind(&scheduleCourseRequest); err != nil || len(scheduleCourseRequest.TeacherCourseRelationShip) == 0 {
+		c.JSON(http.StatusOK, Form.ScheduleCourseResponse{
+			Code: Form.ParamInvalid,
+			Data: nil,
+		})
+		return
+	}
+	// key是courseID，val是TeacherID，记录该课程已分配的教师号
+	whoPickCourse := make(map[string]string)
+
+	for k, _ := range scheduleCourseRequest.TeacherCourseRelationShip {
+		// key是courseID，val是记录本次是否访问过这个courseID(一轮dfs不能对同一个courseID重新分配多次，否则会死循环)，每次dfs开始的时候重置vis
+		vis := make(map[string]bool)
+		dfsSchedule(k, scheduleCourseRequest.TeacherCourseRelationShip, whoPickCourse, vis)
+	}
+	// 交换whoPickCourse的key和value就是结果
+	res := make(map[string]string)
+	for k, v := range whoPickCourse {
+		res[v] = k
+	}
+
+	c.JSON(http.StatusOK, Form.ScheduleCourseResponse{
+		Code: Form.OK,
+		Data: res,
+	})
+}
+
+func dfsSchedule(TeacherID string, TeacherCourseRelationShip map[string][]string, whoPickCourse map[string]string, vis map[string]bool) (res bool) {
+	// 得到这个教师可以绑定的CourseID数组
+	arr := TeacherCourseRelationShip[TeacherID]
+	// 遍历CourseID数组
+	for _, v := range arr {
+		// 如果这个CourseID在这轮dfs没被访问过，则可以**尝试**把这个CourseID与当前的TeacherID绑定
+		_, ok := vis[v]
+		if !ok {
+			// 标记这轮已访问过该CourseID
+			vis[v] = true
+			// 查询这个CourseID此前是否已经被别人绑定了，
+			pickedTeacherID, ok := whoPickCourse[v]
+			// 如果已被绑定，则尝试让绑定了这个CourseID的TeacherID换一个（dfs）
+			//	未绑定、更换成功都可以将这个CourseID与当前TeacherID绑定，然后返回true
+			if !ok || dfsSchedule(pickedTeacherID, TeacherCourseRelationShip, whoPickCourse, vis) {
+				whoPickCourse[v] = TeacherID
+				res = true
+				return
+			}
+		}
+	}
+	// 遍历到底该TeacherID都未能绑定一个CourseID，返回false
+	res = false
+	return
 }

@@ -15,7 +15,7 @@ func main() {
 	global.CTX = context.Background()
 	global.LOG = initialize.Zap()
 	global.DB = initialize.GormMysql()
-	global.RDB = initialize.Redis()
+	//global.RDB = initialize.Redis()
 	if global.LOG != nil {
 		defer global.LOG.Sync()
 	}

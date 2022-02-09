@@ -40,19 +40,19 @@ func Create(c *gin.Context) {
 	Password := create.Password
 	UserType := create.UserType
 	if len(Nickname) < 4 || len(Nickname) > 20 {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
 		})
 		return
 	}
 	if len(Username) < 8 || len(Username) > 20 {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
 		})
 		return
 	}
 	if len(Password) < 8 || len(Password) > 20 {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
 		})
 		return
@@ -70,12 +70,12 @@ func Create(c *gin.Context) {
 		}
 	}
 	if count1 == 0 || count2 == 0 || count3 == 0 {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
 		})
 	}
 	if UserType != Form.Admin && UserType != Form.Student && UserType != Form.Teacher {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
 		})
 		return
