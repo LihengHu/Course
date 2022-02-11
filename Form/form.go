@@ -204,3 +204,15 @@ type ScheduleCourseResponse struct {
 	Code ErrNo
 	Data map[string]string // key 为 teacherID , val 为老师最终绑定的课程 courseID
 }
+
+// 获取学生课表
+type GetStudentCourseRequest struct {
+	StudentID string
+}
+
+type GetStudentCourseResponse struct {
+	Code ErrNo
+	Data struct {
+		CourseList []TCourse
+	}
+}

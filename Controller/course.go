@@ -24,6 +24,20 @@ func CreateCourse(c *gin.Context) {
 		return
 	}
 
+	var exist int64
+	global.DB.Table("courses").Where("name=?", createCourseRequest.Name).Count(&exist)
+
+	// 该用户名已存在
+	if exist != 0 {
+		c.JSON(http.StatusOK, Form.CreateCourseResponse{
+			Code: Form.UnknownError,
+			Data: struct {
+				CourseID string
+			}{},
+		})
+		return
+	}
+
 	// 获取最新的记录
 	var size int64
 	global.DB.Table("courses").Count(&size)
@@ -39,11 +53,11 @@ func CreateCourse(c *gin.Context) {
 		CourseCap: createCourseRequest.Cap,
 	}
 
-	/*redis*/
-	err := global.RDB.Del(global.CTX, "courses").Err()
-	if err != nil {
-		panic(err)
-	}
+	///*redis*/
+	//err := global.RDB.Del(global.CTX, "courses").Err()
+	//if err != nil {
+	//	panic(err)
+	//}
 	global.DB.Table("courses").Create(&newCourse)
 	global.LOG.Info(
 		"Create Course",
@@ -146,15 +160,9 @@ func UnbindCourse(c *gin.Context) {
 		return
 	}
 
-	// 课程未绑定
-	if getCourse.TeacherID == "-1" {
+	// 课程未绑定、课程已绑定的TeacherID与传入的TeacherID不一致
+	if getCourse.TeacherID == "-1" || getCourse.TeacherID != unbindCourseRequest.TeacherID {
 		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.CourseNotBind})
-		return
-	}
-
-	// 课程已绑定的TeacherID与传入的TeacherID不一致
-	if getCourse.TeacherID != unbindCourseRequest.TeacherID {
-		c.JSON(http.StatusOK, Form.UnbindCourseResponse{Code: Form.ParamInvalid})
 		return
 	}
 
@@ -187,7 +195,7 @@ func GetTeacherCourse(c *gin.Context) {
 	global.DB.Table("courses").Where("teacher_id=?", getTeacherCourseRequest.TeacherID).Find(&courses)
 	if len(courses) == 0 {
 		c.JSON(http.StatusOK, Form.GetTeacherCourseResponse{
-			Code: Form.CourseNotExisted,
+			Code: Form.OK,
 			Data: struct {
 				CourseList []*Form.TCourse
 			}{},
@@ -259,4 +267,58 @@ func dfsSchedule(TeacherID string, TeacherCourseRelationShip map[string][]string
 	// 遍历到底该TeacherID都未能绑定一个CourseID，返回false
 	res = false
 	return
+}
+
+//获取学生课程
+func StudentCourse(c *gin.Context) {
+	// 创建变量绑定输入
+	var getStudentCourseRequest Form.GetStudentCourseRequest
+	// 参数不合法
+	if err := c.Bind(&getStudentCourseRequest); err != nil || len(getStudentCourseRequest.StudentID) == 0 {
+		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+			Code: Form.OK,
+			Data: struct {
+				CourseList []Form.TCourse
+			}{},
+		})
+		return
+	}
+
+	var student Form.TMember
+	global.DB.Table("members").Where("user_id=? and deleted=?", getStudentCourseRequest.StudentID, 0).Find(&student)
+	// 学生不存在
+	if student.UserID != getStudentCourseRequest.StudentID || student.UserType != Form.Student {
+		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+			Code: Form.StudentNotExisted,
+			Data: struct {
+				CourseList []Form.TCourse
+			}{},
+		})
+		return
+	}
+
+	var courseIDList []string
+	global.DB.Table("schedules").Where("student_id=?", getStudentCourseRequest.StudentID).Select("course_id").Find(&courseIDList)
+	// 学生没课程
+	if len(courseIDList) == 0 {
+		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+			Code: Form.StudentHasNoCourse,
+			Data: struct {
+				CourseList []Form.TCourse
+			}{},
+		})
+		return
+	}
+	var res []Form.TCourse
+	for _, courseId := range courseIDList {
+		var getCourse Form.TCourse
+		global.DB.Table("courses").Where("course_id=?", courseId).Find(&getCourse)
+		res = append(res, getCourse)
+	}
+	c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+		Code: Form.OK,
+		Data: struct {
+			CourseList []Form.TCourse
+		}{res},
+	})
 }
