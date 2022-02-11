@@ -149,7 +149,7 @@ func Delete(c *gin.Context) {
 		"Delete Member",
 		zap.String("UserID", UserID),
 	)
-	c.JSON(200, gin.H{"Code": 0})
+	c.JSON(200, Form.DeleteMemberResponse{Code: Form.OK})
 }
 
 func Update(c *gin.Context) {
