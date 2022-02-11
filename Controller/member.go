@@ -45,6 +45,17 @@ func Create(c *gin.Context) {
 		})
 		return
 	}
+	for i := 0; i < len(Nickname); i++ {
+		if (Nickname[i] >= 'A' && Nickname[i] <= 'Z') || (Nickname[i] >= 'a' && Nickname[i] <= 'z') {
+			continue
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"Code": Form.ParamInvalid,
+			})
+			return
+		}
+
+	}
 	if len(Username) < 8 || len(Username) > 20 {
 		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.ParamInvalid,
