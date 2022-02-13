@@ -27,7 +27,7 @@ func CreateCourse(c *gin.Context) {
 	var exist int64
 	global.DB.Table("courses").Where("name=?", createCourseRequest.Name).Count(&exist)
 
-	// 该用户名已存在
+	// 该課程名已存在
 	if exist != 0 {
 		c.JSON(http.StatusOK, Form.CreateCourseResponse{
 			Code: Form.UnknownError,
@@ -53,11 +53,11 @@ func CreateCourse(c *gin.Context) {
 		CourseCap: createCourseRequest.Cap,
 	}
 
-	///*redis*/
-	//err := global.RDB.Del(global.CTX, "courses").Err()
-	//if err != nil {
-	//	panic(err)
-	//}
+	/*redis*/
+	err := global.RDB.Del(global.CTX, "courses").Err()
+	if err != nil {
+		panic(err)
+	}
 	global.DB.Table("courses").Create(&newCourse)
 	global.LOG.Info(
 		"Create Course",
@@ -95,13 +95,13 @@ func GetCourse(c *gin.Context) {
 			Code: Form.CourseNotExisted,
 			Data: Form.TCourse{},
 		})
+		return
 	}
 	// 返回课程
 	c.JSON(http.StatusOK, Form.GetCourseResponse{
 		Code: Form.OK,
 		Data: getCourse,
 	})
-
 }
 
 //绑定课程
@@ -183,6 +183,16 @@ func GetTeacherCourse(c *gin.Context) {
 	if err := c.Bind(&getTeacherCourseRequest); err != nil || len(getTeacherCourseRequest.TeacherID) == 0 {
 		c.JSON(http.StatusOK, Form.GetTeacherCourseResponse{
 			Code: Form.ParamInvalid,
+			Data: struct {
+				CourseList []*Form.TCourse
+			}{},
+		})
+		return
+	}
+
+	if getTeacherCourseRequest.TeacherID == "-1" {
+		c.JSON(http.StatusOK, Form.GetTeacherCourseResponse{
+			Code: Form.OK,
 			Data: struct {
 				CourseList []*Form.TCourse
 			}{},
