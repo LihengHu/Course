@@ -11,8 +11,13 @@ import (
 )
 
 func BookCourse(c *gin.Context) {
-	StudentID := c.PostForm("StudentID")
-	CourseID := c.PostForm("CourseID")
+	var bookcourse Form.BookCourseRequest
+	err1 := c.Bind(&bookcourse)
+	if err1 != nil {
+		panic(err1)
+	}
+	StudentID := bookcourse.StudentID
+	CourseID := bookcourse.CourseID
 	//清除脏数据时取消注释
 	//err := global.RDB.Del(global.CTX, "schedules").Err()
 	//if err != nil {

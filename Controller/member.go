@@ -34,7 +34,12 @@ func Create(c *gin.Context) {
 	oldId, _ := strconv.ParseInt(firstUser.UserID, 10, 64)
 	UserID := strconv.FormatInt(oldId+1, 10)
 	var create Form.CreateMemberRequest
-	c.Bind(&create)
+	if err := c.Bind(&create); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"Code": Form.ParamInvalid,
+		})
+		return
+	}
 	Nickname := create.Nickname
 	Username := create.Username
 	Password := create.Password
@@ -114,7 +119,12 @@ func Create(c *gin.Context) {
 }
 
 func GetMember(c *gin.Context) {
-	UserID := c.PostForm("UserID")
+	var getMember Form.GetMemberRequest
+	err1 := c.Bind(&getMember)
+	if err1 != nil {
+		panic(err1)
+	}
+	UserID := getMember.UserID
 	var user Form.Member
 	global.DB.Where("user_id = ?", UserID).First(&user)
 	if user.Deleted == "" {
@@ -137,13 +147,29 @@ func GetMember(c *gin.Context) {
 }
 func Delete(c *gin.Context) {
 	var deleteRequest Form.DeleteMemberRequest
-	c.Bind(&deleteRequest)
+	err1 := c.Bind(&deleteRequest)
+	if err1 != nil {
+		panic(err1)
+	}
 	UserID := deleteRequest.UserID
 	err := global.RDB.Del(global.CTX, "members").Err()
 	if err != nil {
 		panic(err)
 	}
 	var user Form.Member
+	global.DB.Where("user_id = ?", UserID).First(&user)
+	if user.Username == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"Code": Form.UserNotExisted,
+		})
+		return
+	}
+	if user.Deleted == "1" {
+		c.JSON(http.StatusOK, gin.H{
+			"Code": Form.UserHasDeleted,
+		})
+		return
+	}
 	global.DB.Model(&user).Where("user_id = ?", UserID).Update("deleted", "1")
 	global.LOG.Info(
 		"Delete Member",
@@ -154,7 +180,10 @@ func Delete(c *gin.Context) {
 
 func Update(c *gin.Context) {
 	var updateRequest Form.UpdateMemberRequest
-	c.Bind(&updateRequest)
+	err1 := c.Bind(&updateRequest)
+	if err1 != nil {
+		panic(err1)
+	}
 	UserID := updateRequest.UserID
 	Nickname := updateRequest.Nickname
 	err := global.RDB.Del(global.CTX, "members").Err()
@@ -188,10 +217,13 @@ func List(c *gin.Context) {
 	userdb := global.DB.Model(&Form.Member{}).Where(&Form.Member{Deleted: "0"})
 	var count int64
 	userdb.Count(&count) //总行数
-	var getMember Form.GetMemberListRequest
-	c.Bind(&getMember)
-	pageindex := getMember.Offset
-	pagesize := getMember.Limit
+	var getMemberlist Form.GetMemberListRequest
+	err1 := c.Bind(&getMemberlist)
+	if err1 != nil {
+		panic(err1)
+	}
+	pageindex := getMemberlist.Offset
+	pagesize := getMemberlist.Limit
 	UserList := []Form.Member{}
 	userdb.Offset((pageindex - 1) * pagesize).Limit(pagesize).Find(&UserList) //查询pageindex页的数据
 	var length int = len(UserList)

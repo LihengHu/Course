@@ -23,10 +23,8 @@ func CreateCourse(c *gin.Context) {
 		})
 		return
 	}
-
 	var exist int64
 	global.DB.Table("courses").Where("name=?", createCourseRequest.Name).Count(&exist)
-
 	// 该用户名已存在
 	if exist != 0 {
 		c.JSON(http.StatusOK, Form.CreateCourseResponse{

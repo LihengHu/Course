@@ -216,3 +216,8 @@ type GetStudentCourseResponse struct {
 		CourseList []TCourse
 	}
 }
+
+type BookCourseRequest struct {
+	StudentID string
+	CourseID  string
+}

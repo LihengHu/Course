@@ -11,18 +11,21 @@ import (
 //登录
 func Login(c *gin.Context) {
 	var loginRequest Form.LoginRequest
-	c.Bind(&loginRequest)
+	if err := c.Bind(&loginRequest); err != nil {
+		panic(err)
+	}
 	Username := loginRequest.Username
 	Password := loginRequest.Password
 
 	var user Form.Member
 	global.DB.Where("Username = ?", Username).First(&user)
-	if user.Deleted == "1" {
+	if user.Username == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.WrongPassword,
 		})
+		return
 	}
-	if user.Username == "" {
+	if user.Deleted == "1" {
 		c.JSON(http.StatusOK, gin.H{
 			"Code": Form.WrongPassword,
 		})
@@ -76,10 +79,8 @@ func Whoami(c *gin.Context) {
 		})
 		return
 	}
-
 	var user Form.Member
 	global.DB.Where("Username = ?", cookie).First(&user)
-
 	c.JSON(200, Form.WhoAmIResponse{
 		Code: 0,
 		Data: struct {
