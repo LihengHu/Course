@@ -19,7 +19,7 @@ func Create(c *gin.Context) {
 		return
 	}
 	var user Form.Member
-	global.DB.Where("Username = ?", cookie).First(&user)
+	global.DB.Table("members").Where("Username = ?", cookie).Find(&user)
 	if user.UserType != Form.Admin {
 		c.JSON(200, gin.H{
 			"Code": Form.PermDenied,
@@ -96,8 +96,9 @@ func Create(c *gin.Context) {
 		})
 		return
 	}
+
 	var user1 Form.Member
-	global.DB.Where("username = ?", Username).First(&user1)
+	global.DB.Table("members").Where("username = ?", Username).Find(&user1)
 	if user1.UserID != "" {
 		c.JSON(200, gin.H{
 			"Code": Form.UserHasExisted,
@@ -109,7 +110,7 @@ func Create(c *gin.Context) {
 		panic(err)
 	}
 	u1 := Form.Member{UserID, Nickname, Username, Password, UserType, "0"}
-	global.DB.Create(&u1)
+	global.DB.Table("members").Create(&u1)
 	global.LOG.Info(
 		"Create Member",
 		zap.String("UserID", UserID),

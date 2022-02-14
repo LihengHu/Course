@@ -40,12 +40,13 @@ func Login(c *gin.Context) {
 	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
-		c.SetCookie("camp-session", user.Username, 3600, "/api/v1/", "localhost", false, true)
+		c.SetCookie("camp-session", user.Username, 3600, "/api/v1/", "180.184.74.105", false, true)
 	}
 	global.LOG.Info(
 		"Set Cookie",
 		zap.String("Cookie", cookie),
 	)
+
 	c.JSON(200, Form.LoginResponse{
 		Code: 0,
 		Data: struct{ UserID string }{UserID: user.UserID},
@@ -60,7 +61,7 @@ func Logout(c *gin.Context) {
 		return
 	}
 	// 设置cookie  MaxAge设置为-1，表示删除cookie
-	c.SetCookie("camp-session", cookie, -1, "/api/v1/", "localhost", false, true)
+	c.SetCookie("camp-session", cookie, -1, "/api/v1/", "180.184.74.105", false, true)
 	global.LOG.Info(
 		"Remove Cookie",
 		zap.String("Cookie", cookie),

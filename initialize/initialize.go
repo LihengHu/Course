@@ -12,7 +12,7 @@ import (
 )
 
 func GormMysql() *gorm.DB {
-	dsn := "root:root@tcp(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:bytedancecamp@tcp(127.0.0.1:3306)/db1?charset=utf8mb4&parseTime=True&loc=Local"
 	if db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
 		return nil
 	} else {
