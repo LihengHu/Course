@@ -40,8 +40,16 @@ func BookCourse(c *gin.Context) {
 			panic(err)
 		}
 		if count == 0 {
+			var members []*Form.RedisMember
+			global.DB.Table("members").Select("User_ID,deleted").Where("User_Type = ?", 2).Find(&members)
 			var redisMembers []string
-			global.DB.Table("members").Select("User_ID").Where("User_Type = ?", 2).Find(&redisMembers)
+			for _, member := range members {
+				if member.Deleted == "0" {
+					redisMembers = append(redisMembers, "#"+member.StudentID)
+				} else {
+					redisMembers = append(redisMembers, "@"+member.StudentID)
+				}
+			}
 			err := global.RDB.SAdd(global.CTX, "members", redisMembers).Err()
 			if err != nil {
 				panic(err)
@@ -49,9 +57,16 @@ func BookCourse(c *gin.Context) {
 		}
 		global.MutexMembers.Unlock()
 	}
-	isStudent, err := global.RDB.SIsMember(global.CTX, "members", StudentID).Result()
+	isStudent, err := global.RDB.SIsMember(global.CTX, "members", "#"+StudentID).Result()
+	isDeleted, err := global.RDB.SIsMember(global.CTX, "members", "@"+StudentID).Result()
 	if err != nil {
 		panic(err)
+	}
+	if isDeleted {
+		c.JSON(200, gin.H{
+			"Code": Form.UserHasExisted,
+		})
+		return
 	}
 	if !isStudent {
 		c.JSON(200, gin.H{
@@ -73,7 +88,7 @@ func BookCourse(c *gin.Context) {
 		}
 		if count == 0 {
 			var courses []*Form.RedisCourse
-			global.DB.Table("courses").Select("Course_ID,Course_Cap").Find(&courses)
+			global.DB.Table("courses").Select("Course_ID,Course_Cap").Where("Teacher_ID != ?", -1).Find(&courses)
 			redisCourses := make(map[string]interface{})
 			for _, course := range courses {
 				redisCourses[course.Course_ID] = course.Course_Cap

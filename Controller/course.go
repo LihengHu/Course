@@ -131,6 +131,10 @@ func BindCourse(c *gin.Context) {
 	}
 
 	// 绑定
+	err := global.RDB.Del(global.CTX, "courses").Err()
+	if err != nil {
+		panic(err)
+	}
 	global.DB.Table("courses").Where("course_id=?", bindCourseRequest.CourseID).Update("teacher_id", bindCourseRequest.TeacherID)
 	global.LOG.Info(
 		"Bind Course",
@@ -167,6 +171,10 @@ func UnbindCourse(c *gin.Context) {
 	}
 
 	//解绑
+	err := global.RDB.Del(global.CTX, "courses").Err()
+	if err != nil {
+		panic(err)
+	}
 	global.DB.Table("courses").Where("course_id=?", unbindCourseRequest.CourseID).Update("teacher_id", "-1")
 	global.LOG.Info(
 		"Unbind Course",
@@ -294,28 +302,75 @@ func StudentCourse(c *gin.Context) {
 		return
 	}
 
-	var student Form.Member
-	global.DB.Table("members").Where("user_id=?", getStudentCourseRequest.StudentID).Find(&student)
-	// 学生不存在
-	if student.UserID != getStudentCourseRequest.StudentID || student.UserType != Form.Student {
-		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
-			Code: Form.StudentNotExisted,
-			Data: struct {
-				CourseList []Form.TCourse
-			}{},
+	// 刷新members缓存并检验学生是否存在
+	count, err := global.RDB.SCard(global.CTX, "members").Result()
+	if err != nil {
+		panic(err)
+	}
+	if count == 0 {
+		global.MutexMembers.Lock()
+		count, err := global.RDB.SCard(global.CTX, "members").Result()
+		if err != nil {
+			panic(err)
+		}
+		if count == 0 {
+			var members []*Form.RedisMember
+			global.DB.Table("members").Select("User_ID,deleted").Where("User_Type = ?", 2).Find(&members)
+			var redisMembers []string
+			for _, member := range members {
+				if member.Deleted == "0" {
+					redisMembers = append(redisMembers, "#"+member.StudentID)
+				} else {
+					redisMembers = append(redisMembers, "@"+member.StudentID)
+				}
+			}
+			err := global.RDB.SAdd(global.CTX, "members", redisMembers).Err()
+			if err != nil {
+				panic(err)
+			}
+		}
+		global.MutexMembers.Unlock()
+	}
+	isStudent, err := global.RDB.SIsMember(global.CTX, "members", "#"+getStudentCourseRequest.StudentID).Result()
+	isDeleted, err := global.RDB.SIsMember(global.CTX, "members", "@"+getStudentCourseRequest.StudentID).Result()
+	if err != nil {
+		panic(err)
+	}
+	if isDeleted {
+		c.JSON(200, gin.H{
+			"Code": Form.UserHasExisted,
 		})
 		return
 	}
-	// 学生已删除
-	if student.Deleted == "1" {
-		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
-			Code: Form.UserHasDeleted,
-			Data: struct {
-				CourseList []Form.TCourse
-			}{},
+	if !isStudent {
+		c.JSON(200, gin.H{
+			"Code": Form.StudentNotExisted,
 		})
 		return
 	}
+
+	//var student Form.Member
+	//global.DB.Table("members").Where("user_id=?", getStudentCourseRequest.StudentID).Find(&student)
+	//// 学生不存在
+	//if student.UserID != getStudentCourseRequest.StudentID || student.UserType != Form.Student {
+	//	c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+	//		Code: Form.StudentNotExisted,
+	//		Data: struct {
+	//			CourseList []Form.TCourse
+	//		}{},
+	//	})
+	//	return
+	//}
+	//// 学生已删除
+	//if student.Deleted == "1" {
+	//	c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+	//		Code: Form.UserHasDeleted,
+	//		Data: struct {
+	//			CourseList []Form.TCourse
+	//		}{},
+	//	})
+	//	return
+	//}
 	var courseIDList []string
 	global.DB.Table("schedules").Where("student_id=?", getStudentCourseRequest.StudentID).Select("course_id").Find(&courseIDList)
 

@@ -51,6 +51,11 @@ type RedisCourse struct {
 	Course_Cap int
 }
 
+type RedisMember struct {
+	StudentID string
+	Deleted   string
+}
+
 type CourseCap int
 
 type Schedule struct {

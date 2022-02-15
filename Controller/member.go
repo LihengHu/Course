@@ -26,7 +26,6 @@ func Create(c *gin.Context) {
 		})
 		return
 	}
-	//TODO: 生成自增ID
 	var size int64
 	global.DB.Table("members").Count(&size)
 	var firstUser Form.Member
@@ -170,6 +169,10 @@ func Delete(c *gin.Context) {
 			"Code": Form.UserHasDeleted,
 		})
 		return
+	}
+	err = global.RDB.Del(global.CTX, "members").Err()
+	if err != nil {
+		panic(err)
 	}
 	global.DB.Model(&user).Where("user_id = ?", UserID).Update("deleted", "1")
 	global.LOG.Info(

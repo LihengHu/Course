@@ -48,6 +48,7 @@ func Redis() (rdb *redis.Client) {
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
+		PoolSize: 30,
 	})
 	err := rdb.SAdd(global.CTX, "schedules", "nothing").Err()
 	if err != nil {
