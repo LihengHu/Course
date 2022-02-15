@@ -58,6 +58,9 @@ func Logout(c *gin.Context) {
 	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		cookie = "NotSet"
+		c.JSON(200, Form.LogoutResponse{
+			Code: Form.LoginRequired,
+		})
 		return
 	}
 	// 设置cookie  MaxAge设置为-1，表示删除cookie
