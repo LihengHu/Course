@@ -50,6 +50,7 @@ func BookCourse(c *gin.Context) {
 					redisMembers = append(redisMembers, "@"+member.StudentID)
 				}
 			}
+			redisMembers = append(redisMembers, "nothing")
 			err := global.RDB.SAdd(global.CTX, "members", redisMembers).Err()
 			if err != nil {
 				panic(err)
@@ -93,6 +94,7 @@ func BookCourse(c *gin.Context) {
 			for _, course := range courses {
 				redisCourses[course.Course_ID] = course.Course_Cap
 			}
+			redisCourses["nothing"] = 1
 			err := global.RDB.HMSet(global.CTX, "courses", redisCourses).Err()
 			if err != nil {
 				panic(err)
