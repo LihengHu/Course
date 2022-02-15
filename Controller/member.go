@@ -190,6 +190,23 @@ func Update(c *gin.Context) {
 	}
 	UserID := updateRequest.UserID
 	Nickname := updateRequest.Nickname
+	if len(Nickname) < 4 || len(Nickname) > 20 {
+		c.JSON(http.StatusOK, gin.H{
+			"Code": Form.ParamInvalid,
+		})
+		return
+	}
+	for i := 0; i < len(Nickname); i++ {
+		if (Nickname[i] >= 'A' && Nickname[i] <= 'Z') || (Nickname[i] >= 'a' && Nickname[i] <= 'z') {
+			continue
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"Code": Form.ParamInvalid,
+			})
+			return
+		}
+	}
+
 	err := global.RDB.Del(global.CTX, "members").Err()
 	if err != nil {
 		panic(err)
