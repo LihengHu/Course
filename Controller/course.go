@@ -294,8 +294,8 @@ func StudentCourse(c *gin.Context) {
 		return
 	}
 
-	var student Form.TMember
-	global.DB.Table("members").Where("user_id=? and deleted=?", getStudentCourseRequest.StudentID, 0).Find(&student)
+	var student Form.Member
+	global.DB.Table("members").Where("user_id=?", getStudentCourseRequest.StudentID).Find(&student)
 	// 学生不存在
 	if student.UserID != getStudentCourseRequest.StudentID || student.UserType != Form.Student {
 		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
@@ -306,9 +306,19 @@ func StudentCourse(c *gin.Context) {
 		})
 		return
 	}
-
+	// 学生已删除
+	if student.Deleted == "1" {
+		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{
+			Code: Form.UserHasDeleted,
+			Data: struct {
+				CourseList []Form.TCourse
+			}{},
+		})
+		return
+	}
 	var courseIDList []string
 	global.DB.Table("schedules").Where("student_id=?", getStudentCourseRequest.StudentID).Select("course_id").Find(&courseIDList)
+
 	// 学生没课程
 	if len(courseIDList) == 0 {
 		c.JSON(http.StatusOK, Form.GetStudentCourseResponse{

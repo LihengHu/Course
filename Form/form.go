@@ -23,12 +23,12 @@ const (
 )
 
 type Member struct {
-	UserID   string
-	Nickname string   // required，不小于 4 位 不超过 20 位
-	Username string   // required，只支持大小写，长度不小于 8 位 不超过 20 位
-	Password string   // required，同时包括大小写、数字，长度不少于 8 位 不超过 20 位
-	UserType UserType // required, 枚举值
-	Deleted  string
+	UserID   string   `gorm:"Column:user_id"`
+	Nickname string   `gorm:"Column:nickname"`  // required，不小于 4 位 不超过 20 位
+	Username string   `gorm:"Column:username"`  // required，只支持大小写，长度不小于 8 位 不超过 20 位
+	Password string   `gorm:"Column:password"`  // required，同时包括大小写、数字，长度不少于 8 位 不超过 20 位
+	UserType UserType `gorm:"Column:user_type"` // required, 枚举值
+	Deleted  string   `gorm:"Column:deleted"`
 }
 
 type UserType int
