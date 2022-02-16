@@ -246,6 +246,12 @@ func List(c *gin.Context) {
 	pageindex := getMemberlist.Offset
 	pagesize := getMemberlist.Limit
 	UserList := []Form.Member{}
+	if pagesize <= 0 && pageindex <= 0 {
+		c.JSON(200, gin.H{
+			"Code": Form.ParamInvalid,
+		})
+		return
+	}
 	userdb.Offset((pageindex - 1) * pagesize).Limit(pagesize).Find(&UserList) //查询pageindex页的数据
 	var length int = len(UserList)
 	TMemberList := make([]Form.TMember, length)
