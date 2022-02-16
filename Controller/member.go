@@ -246,7 +246,7 @@ func List(c *gin.Context) {
 	pageindex := getMemberlist.Offset
 	pagesize := getMemberlist.Limit
 	UserList := []Form.Member{}
-	if pagesize <= 0 && pageindex <= 0 {
+	if pagesize <= 0 || pageindex <= 0 {
 		c.JSON(200, gin.H{
 			"Code": Form.ParamInvalid,
 		})
